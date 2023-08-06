@@ -7,11 +7,10 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 from astropy.timeseries import BoxLeastSquares
-from astropy.stats import sigma_clip
-import csv
 from urllib.request import urlopen
 from io import BytesIO
 from zipfile import ZipFile
+import webbrowser
 import os
 import ssl
 import numpy as np
@@ -24,7 +23,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 # It features automatic planetary transit detection, estimate of period, distance, radius of the potential exoplanet, 
 # and a secondary GUI to simulate planetary temperature given various input parameters, comparing these to Earth's.
 
-# Marco Leonardi 2023, esame astrobiologia
+# Marco Leonardi 2023, x esame astrobiologia
 # -----------------------------------------------------------------------------------------------
 
 
@@ -55,7 +54,10 @@ def download_and_unzip():
 		print("Download Complete")
 	else:
 		msgbox.showinfo(title="No File Found", message="Please input a valid product ID from a TESS/KEPLER observation")
-		
+
+def callback(url):
+	webbrowser.open(url)
+
 def load_file():
 	file_path = filedialog.askopenfilename(filetypes=[("Fits Files", "*.fits")])
 	path_label.configure(text=file_path)
@@ -419,24 +421,19 @@ def temp_sim():
 # -----------------------------------------------------------------------------------------------
 
 def display_general_help():
-    general_help_text = """Exoplanet Research and Temperature Estimation GUI Help
-
-1. Download and Load File:
-   - To start, enter the Product Group ID for a TESS/KEPLER observation and click 'Download and Extract'.
-   - Alternatively, you can load a local FITS or lightkurve file by clicking 'Load File'.
-   - The light curve will be displayed, and you can analyze it using the 'Analyse Light Curve' button.
-
-2. Analyzing Light Curve:
-   - After loading a file, click 'Analyse Light Curve' to estimate the period and identify potential exoplanets.
-   - The periodogram, folded light curve, and other information will be displayed.
-   - Check 'Auto Save figures' to save the figures as PNGs.
-
-3. Temperature Simulation:
-   - Click 'Temperature Simulation' to open the Exoplanet Temperature Simulator.
-   - Enter the exoplanet's parameters and click 'Calculate' to estimate the surface temperature.
-   - You can compare the exoplanet to Earth's parameters using 'Transfer Data'."""
+    general_help_text = """Finding and Downloading TESS Light Curve (LC) files:
+    1. Go to the MAST archive, link in the bottom right
+    2. Select the collection 'Mast Catalogs'
+    3. Select the mission 'TESS Ctl v8.01'
+    4. Click on 'Advanced Search' and restrict your search to close stars (ca <30pc)
+    5. Look through all the TIC observations by:
+     - Selecting 'MAST Observations by Object Name or RA/Dec'
+     - Searching for TIC+ the TIC IDs of the first list
+    6. Observations with a lightcurve file will have a symbol at the beginning of their row
+    7. Click 'Show Details' -> 'Details' -> 'Copy the Product Group ID'
+    8. Paste the Product Group ID in the download box and wait for the download."""
    
-    msgbox.showinfo(title="General Help", message=general_help_text)
+    msgbox.showinfo(title="Download Help", message=general_help_text)
 
 def display_lc_help():
     lc_help_text = """Light Curve Analysis Help
@@ -444,13 +441,17 @@ def display_lc_help():
 1. Load File:
    - You can load a TESS/KEPLER observation FITS file or a lightkurve file.
    - Click 'Load File' to choose the file from your local directory.
+   - Check 'LC File' for light curve files, uncheck for 'TPF' pixel files. 
 
 2. Analyze Light Curve:
    - After loading a file, click 'Analyse Light Curve' to estimate the period and identify potential exoplanets.
-   - The periodogram, folded light curve, and other information will be displayed.
+   - The light curve, periodogram, folded light curve, and other information will be displayed
+   - Stellar Mass is not included in these LC files, so you may have to tweak it manually. The values are available on the MAST website.
+   - Default stellar mass (if left blank) is 1 Solar Mass).
 
 3. Auto Save figures:
-   - If you check this box, the figures will be automatically saved as PNG files."""
+   - If you check this box, the figures will be automatically saved as PNG files in the working directory.
+   - This will not override the saved files for different observations, but it will for the same ones."""
 
     msgbox.showinfo(title="Light Curve Analysis Help", message=lc_help_text)
 
@@ -485,16 +486,23 @@ def display_temp_sim_help():
    - Click 'Calculate' to estimate the surface temperature of the exoplanet.
 
 10. Transfer Data:
-   - Click 'Transfer Data' to automatically fill the parameters with the estimated values from the light curve analysis."""
+   - Click 'Transfer Data' to automatically fill the parameters with the estimated values from the light curve analysis, 
+   and fill the remaining atmospheric parameters with Earth's."""
 
     msgbox.showinfo(title="Temperature Simulator Help", message=temp_sim_help_text)
+
+def cred():
+	creds = """Marco Leonardi 2023 
+	University of Bologna
+	marcoleonarditredici@gmail.com"""
+	msgbox.showinfo(title="Credits", message=creds)
 
 def display_help_window():
     help_window = tk.Toplevel(root)
     help_window.title("Help")
 
     # General Help Button
-    general_help_button = tk.Button(help_window, text="General Help", command=display_general_help)
+    general_help_button = tk.Button(help_window, text="Finding and Downloading LCs", command=display_general_help)
     general_help_button.grid(row=0, column=0, padx=10, pady=5)
 
     # Light Curve Analysis Help Button
@@ -504,6 +512,10 @@ def display_help_window():
     # Temperature Simulator Help Button
     temp_sim_help_button = tk.Button(help_window, text="Temperature Simulator Help", command=display_temp_sim_help)
     temp_sim_help_button.grid(row=2, column=0, padx=10, pady=5)
+    
+    # Credits
+    credits_button = tk.Button(help_window, text="Credits", command=cred)
+    credits_button.grid(row=3,column=0, padx=10, pady=5)
 
 
 
@@ -529,6 +541,11 @@ checkbox.grid(row=2, column=1)
 # Download button
 download_button = tk.Button(root, text="Download and Extract", command=download_and_unzip)
 download_button.grid(row=2, column=0)
+
+# Links
+mast_link = tk.Label(root, text="MAST Archive", fg="blue")
+mast_link.grid(row=9, column=3)
+mast_link.bind("<Button-1>", lambda e: callback("https://mast.stsci.edu/portal/Mashup/Clients/Mast/Portal.html"))
 
 # Path
 path_label = tk.Label(root, text=" ")
