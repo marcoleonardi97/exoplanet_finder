@@ -492,9 +492,14 @@ def display_temp_sim_help():
     msgbox.showinfo(title="Temperature Simulator Help", message=temp_sim_help_text)
 
 def cred():
-	creds = """Marco Leonardi 2023 
+	creds = """ GUI and Sim:
+	Marco Leonardi 2023 
 	University of Bologna
-	marcoleonarditredici@gmail.com"""
+	marcoleonarditredici@gmail.com
+	------------------------------
+	The lightkurve library was made by the Lightkurve
+	Collaboration group that includes scientists from the STScI, NASA and ESA
+	https://ui.adsabs.harvard.edu/abs/2018ascl.soft12013L/abstract"""
 	msgbox.showinfo(title="Credits", message=creds)
 
 def display_help_window():
@@ -615,7 +620,7 @@ saved_radius = tk.Label(root, text="")
 saved_distance= tk.Label(root, text="")
 saved_temperature= tk.Label(root, text="")
 saved_period= tk.Label(root, text="")
-saved_transit = tk.Label(root, text="")
+saved_transit = tk.Label(root, text="")e
 
 def configure_resizing():
     # Allow rows and columns to resize proportionally when the window is resized
