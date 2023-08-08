@@ -9,3 +9,8 @@ Features to be added:
 
 • Export all results to .csv
 
+![One](Dark.png)
+![Two](Light.png)
+![Three](TempD.png)
+![Four](TempL.png)
+![Five](Help.png)
