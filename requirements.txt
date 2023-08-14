@@ -1,0 +1,6 @@
+lightkurve==2.0.11
+matplotlib==3.4.3
+numpy==1.21.2
+Pillow==8.4.0
+sv-ttk==2.5.5
+certifi==2021.5.30
