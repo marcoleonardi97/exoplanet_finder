@@ -6,7 +6,6 @@ import tkinter.messagebox as msgbox
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
-#from astropy.timeseries import BoxLeastSquares
 from urllib.request import urlopen
 from io import BytesIO
 import threading
@@ -57,6 +56,10 @@ notebook.add(temp_tab, text='Temperature Simulation')
 help_tab = ttk.Frame(notebook)
 notebook.add(help_tab, text='Help')
 
+# Tab 4: Settings
+settings_tab = ttk.Frame(notebook)
+notebook.add(settings_tab, text="Settings")
+
 
 # -----------------------------------------------------------------------------------------------
 # Functions used in the finder GUI
@@ -98,14 +101,16 @@ def analyse_all():
         tpf = TessTargetPixelFile(path_label["text"])
         obj = tpf.get_header()["OBJECT"]
         stellar_radius = tpf.get_header()["RADIUS"]
-        star_temp = tpf.get_header()["TEFF"]
+        stellar_radius_lab.configure(text=tpf.get_header()["RADIUS"])
+        star_temp_lab.configure(text=tpf.get_header()["TEFF"])
         lc = tpf.to_lightcurve(aperture_mask=tpf.pipeline_mask)
         saved_name.configure(text=obj)
     else:
         lc = lk.read(path_label["text"])
         obj = lc.meta["OBJECT"]
         stellar_radius = lc.meta["RADIUS"]
-        star_temp = lc.meta["TEFF"]
+        stellar_radius_lab.configure(text=lc.meta["RADIUS"])
+        star_temp_lab.configure(text=lc.meta["TEFF"])
 
     # Period calculations
     upper_bound = 7
@@ -201,6 +206,7 @@ def within(arr, roller):
 # -----------------------------------------------------------------------------------------------
 # Functions used in the Temperature Simulator
 # -----------------------------------------------------------------------------------------------
+
 def calculate_surface_temperature(sigma, flux, co2, ch4, radius, pressure, density, heat):
     temp = ((flux * (1.0 - co2 - ch4)) / (4.0 * radius ** 2 * sigma)) ** 0.25
     temperature = temp * (1.0 + ((co2 + ch4) * pressure * 1000) / (density * heat))
@@ -251,7 +257,6 @@ def temp_sim():
             ch4 = float(ch4_entry.get())
             irr = float(irr_entry.get())
 
-            # Calculate the surface temperature
             F = irr / (distance ** 2)
             CO2Parameter = co2 / 1000000 * 5.35  # Scaling factor for CO2 greenhouse effect (Earth-like climate) - https://www.ipcc.ch/report/ar5/wg1/
             CH4Parameter = ch4 / 1000000 * 0.036  # Scaling factor for CH4 greenhouse effect (Earth-like climate) - https://www.ipcc.ch/report/ar5/wg1/
@@ -264,7 +269,7 @@ def temp_sim():
             planet_ESI.configure(text=f"ESI: {esi:.2f}")
 
             # Update the result label
-            result_label.configure(text="Surface Temperature: {:.2f} °C".format(temperature - 273.15))
+            result_label.configure(text="Surface Temperature: {:.2f} °K".format(temperature))
             saved_temperature.configure(text=temperature)
             # Update the circle size and color
             circle_size = min(int(radius * 10), 95)
@@ -320,6 +325,12 @@ def temp_sim():
             msgbox.showinfo(title="No planet", message="No planet found to compare")
             return
         else:
+            star_rad = float(stellar_radius_lab['text']) * 6.9e8
+            star_temp = float(star_temp_lab['text']) 
+
+            # Calculate the surface temperature
+            area = 4 * np.pi * star_rad**2
+            irr = (sigma * area * star_temp**4) / (4 * np.pi * saved_distance['text'] * 2.7e22)
             # Clear entries
             distance_entry.delete(0, tk.END)
             radius_entry.delete(0, tk.END)
@@ -338,7 +349,7 @@ def temp_sim():
             specificHeat_entry.insert(0, 700)
             co2_entry.insert(0, 400)
             ch4_entry.insert(0, 1.8)
-            irr_entry.insert(0, 1361)
+            irr_entry.insert(0, irr)
 
             calculate_temperature()
 
@@ -431,7 +442,7 @@ def temp_sim():
 
 
 # -----------------------------------------------------------------------------------------------
-# Help window with instructions:
+# Help tab:
 # -----------------------------------------------------------------------------------------------
 def display_help_window():
     def display_general_help():
@@ -532,12 +543,36 @@ def display_help_window():
     credits_button = ttk.Button(help_tab, text="Credits", command=cred)
     credits_button.grid(row=3, column=1, padx = 10, pady = 10)
 
+
+# -----------------------------------------------------------------------------------------------
+# Settings / Themes:
+# -----------------------------------------------------------------------------------------------
+
+def settings():	
+
+	def on_closing():
+		result = msgbox.askyesno(title="Quit", message="Are you sure you want to exit?")
+		if result:
+			root.destroy()
+
+        
+	mode_switch = ttk.Button(settings_tab, text="Change Theme", command=sv_ttk.toggle_theme)
+	mode_switch.grid(row=0, column=0, padx=10, pady=10)
+	root.protocol("WM_DELETE_WINDOW", on_closing)
+
+
+# -----------------------------------------------------------------------------------------------
+# Threading:
+# -----------------------------------------------------------------------------------------------
+
 def displayTabContents():
     t1 = threading.Thread(target=temp_sim)
     t2 = threading.Thread(target=display_help_window)
+    t3 = threading.Thread(target=settings)
 
     t1.start()
     t2.start()
+    t3.start()
 
 
 # -----------------------------------------------------------------------------------------------
@@ -615,6 +650,8 @@ saved_distance = ttk.Label(lc_tab, text="")
 saved_temperature = ttk.Label(lc_tab, text="")
 saved_period = ttk.Label(lc_tab, text="")
 saved_transit = ttk.Label(lc_tab, text="")
+stellar_radius_lab = ttk.Label(lc_tab, text="")
+star_temp_lab = ttk.Label(lc_tab, text="")
 
 # Links
 mast_link = ttk.Label(help_tab, text="MAST Archive", foreground="blue")
@@ -658,7 +695,8 @@ def on_resize(event):
 
 displayTabContents()
 
-sv_ttk.set_theme("dark")
+sv_ttk.set_theme("light")
+
 lc_tab.bind("<Configure>", on_resize)
 
 root.mainloop()
