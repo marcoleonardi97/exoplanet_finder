@@ -329,8 +329,8 @@ def temp_sim():
             star_temp = float(star_temp_lab['text']) 
 
             # Calculate the surface temperature
-            area = 4 * np.pi * star_rad**2
-            irr = (sigma * area * star_temp**4) / (4 * np.pi * saved_distance['text'] * 2.7e22)
+            area = star_rad**2
+            irr = (sigma * area * star_temp**4) / ((saved_distance['text'] * 1.49e11)**2)
             # Clear entries
             distance_entry.delete(0, tk.END)
             radius_entry.delete(0, tk.END)
@@ -417,7 +417,7 @@ def temp_sim():
     ch4_entry.grid(row=7, column=1)
 
     # Irradiance input
-    irr_label = ttk.Label(temp_tab, text="Star Irradiance (Watts)")
+    irr_label = ttk.Label(temp_tab, text="Star Irradiance (W/m^2)")
     irr_label.grid(row=8, column=0)
     irr_entry = ttk.Entry(temp_tab)
     irr_entry.grid(row=8, column=1)
@@ -695,7 +695,7 @@ def on_resize(event):
 
 displayTabContents()
 
-sv_ttk.set_theme("light")
+sv_ttk.set_theme("dark")
 
 lc_tab.bind("<Configure>", on_resize)
 
