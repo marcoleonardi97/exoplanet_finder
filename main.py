@@ -41,6 +41,7 @@ CH4Concentration = 1.8e-6	# Concentration of CH4 in Earth's atmosphere (1.8 ppm)
 root = tk.Tk()
 root.title("Lightcurve Analysis")
 
+# This allows for the different tabs at the top
 notebook = ttk.Notebook(root)
 notebook.grid(row=1, column=0, columnspan=4, rowspan=11, sticky="nsew")
 
@@ -49,8 +50,8 @@ lc_tab = ttk.Frame(notebook)
 notebook.add(lc_tab, text='Light Curve Analysis')
 
 # Tab 2: Temperature Simulation
-temp_tab = ttk.Frame(notebook)
-notebook.add(temp_tab, text='Temperature Simulation')
+tempsim_tab = ttk.Frame(notebook)
+notebook.add(tempsim_tab, text='Temperature Simulation')
 
 # Tab 3: Help
 help_tab = ttk.Frame(notebook)
@@ -208,9 +209,10 @@ def within(arr, roller):
 # -----------------------------------------------------------------------------------------------
 
 def calculate_surface_temperature(sigma, flux, co2, ch4, radius, pressure, density, heat):
-    temp = ((flux * (1.0 - co2 - ch4)) / (4.0 * radius ** 2 * sigma)) ** 0.25
+    temp = ((flux * (1.0 - co2 - ch4)) / (16*np.pi*sigma)) ** 0.25
     temperature = temp * (1.0 + ((co2 + ch4) * pressure * 1000) / (density * heat))
-    return temperature
+    eqtemp = (flux/(16*np.pi*sigma))**0.25
+    return eqtemp, temperature
 
 def get_rgb(temperature):
     # You can customize the color mapping based on your preference
@@ -245,11 +247,11 @@ def rgbtohex(rgb):
     r, g, b, = rgb
     return f"#{r:02x}{g:02x}{b:02x}"
 
-def temp_sim():
+def temp_sim():    
     def calculate_temperature():
         try:
-            distance = float(distance_entry.get())
-            radius = float(radius_entry.get())
+            distance = float(distance_entry.get()) * 1.49e11
+            radius = float(radius_entry.get()) * 6730000
             pressure = float(pressure_entry.get())
             density = float(density_entry.get())
             heat = float(specificHeat_entry.get())
@@ -258,23 +260,25 @@ def temp_sim():
             irr = float(irr_entry.get())
 
             F = irr / (distance ** 2)
+            
             CO2Parameter = co2 / 1000000 * 5.35  # Scaling factor for CO2 greenhouse effect (Earth-like climate) - https://www.ipcc.ch/report/ar5/wg1/
             CH4Parameter = ch4 / 1000000 * 0.036  # Scaling factor for CH4 greenhouse effect (Earth-like climate) - https://www.ipcc.ch/report/ar5/wg1/
-            temperature = calculate_surface_temperature(sigma, F, CO2Parameter, CH4Parameter, radius, pressure, density,
+            eqt, temperature = calculate_surface_temperature(sigma, F, CO2Parameter, CH4Parameter, radius, pressure, density,
                                                         heat)
 
             # Esimtate ESI
             esi = (1 - abs((288 - temperature) / (288 + temperature))) * (
-                        1 - abs((1 - distance) / (1 + distance)) ** 3) * (1 - abs((1 - radius) / (1 + radius)) ** 3)
+                        1 - abs((1 - distance/1.49e11) / (1 + distance/1.49e11)) ** 3) * (1 - abs((1 - radius/6730000) / (1 + radius/6730000)) ** 3)
             planet_ESI.configure(text=f"ESI: {esi:.2f}")
 
             # Update the result label
-            result_label.configure(text="Surface Temperature: {:.2f} °K".format(temperature))
+            result_eq.configure(text="Equilibrium Temperature {:.2f} °K".format(eqt))
+            result_label.configure(text="Est. Surface Temperature: {:.2f} °K".format(temperature))
             saved_temperature.configure(text=temperature)
             # Update the circle size and color
-            circle_size = min(int(radius * 10), 95)
+            circle_size = min(int(radius / 673000), 95)
             circle_color = rgbtohex(get_rgb(temperature))
-            canvas4.coords(circle, 100 - circle_size, 100 - circle_size, 100 + circle_size, 100 + circle_size)
+            canvas4.coords(circle, 125 - circle_size, 125 - circle_size, 125 + circle_size, 125 + circle_size)
             canvas4.itemconfigure(circle, width=circle_size, fill=circle_color)
 
             plot_comparison()
@@ -312,12 +316,12 @@ def temp_sim():
         # Create a FigureCanvasTkAgg instance and display it in the bar_canvas
         canvas3 = FigureCanvasTkAgg(fig, master=bar_canvas)
         canvas3.draw()
-        canvas3.get_tk_widget().grid(row=13, column=1)
+        canvas3.get_tk_widget().grid(row=0, column=2)
 
         # Add a toolbar
         toolbar = NavigationToolbar2Tk(canvas3, bar_canvas)
         toolbar.update()
-        canvas3.get_tk_widget().grid(row=13, column=1)
+        canvas3.get_tk_widget().grid(row=0, column=2)
 
     def compare_to_earth():
 
@@ -329,8 +333,9 @@ def temp_sim():
             star_temp = float(star_temp_lab['text']) 
 
             # Calculate the surface temperature
-            area = star_rad**2
-            irr = (sigma * area * star_temp**4) / ((saved_distance['text'] * 1.49e11)**2)
+            area = 4* np.pi * star_rad**2
+            
+            irr = (sigma * area * star_temp**4) # / ((saved_distance['text'] * 1.49e11)**2)
             # Clear entries
             distance_entry.delete(0, tk.END)
             radius_entry.delete(0, tk.END)
@@ -352,27 +357,26 @@ def temp_sim():
             irr_entry.insert(0, irr)
 
             calculate_temperature()
+    
 
-    # Create the GUI
-    #sv_ttk.set_theme("dark")
-
+    # HEADER
+    temp_frame = ttk.Frame(tempsim_tab)
+    temp_frame.grid(row=0, column=3)
+    temp_tab = ttk.Frame(tempsim_tab)
+    temp_tab.grid(row=0, column=0, sticky="n")
+    sim_header = ttk.Label(temp_tab, text="The 'help' tab contains Earth's values for reference.")
+    sim_header.grid(row=0, column=0, sticky="n")
+    
+    
     # Result label
     result_label = ttk.Label(temp_tab, text=" ", font=("Consolas", 14))
     result_label.grid(row=11, column=0, columnspan=2)
+    result_eq = ttk.Label(temp_tab, text=" ", font=("Consolas", 14))
+    result_eq.grid(row=12, column=0, columnspan=2)
 
     # Planet ESI
     planet_ESI = ttk.Label(temp_tab, text="ESI: ", font=("Consolas", 14))
-    planet_ESI.grid(row=12, column=0, columnspan=2)
-
-    # Additional Notes Box
-    T = tk.Text(temp_tab, height=5, width=30)
-    T.grid(row=0, column=0, columnspan=2, sticky=tk.W + tk.E)
-    quote = """ Earth parameters in given units for reference: 
-    P = 100, Density = 1.2, Sp.Heat=700, CO2 = 400, CH4 = 1.8
-    Solar Irradiance: 1361 W
-    Marco Leonardi - 05/2023 - Unibo"""
-    T.insert(tk.END, quote)
-    T.config(state="disabled")
+    planet_ESI.grid(row=13, column=0, columnspan=2)
 
     # Distance input
     distance_label = ttk.Label(temp_tab, text="Distance (AU):")
@@ -417,7 +421,7 @@ def temp_sim():
     ch4_entry.grid(row=7, column=1)
 
     # Irradiance input
-    irr_label = ttk.Label(temp_tab, text="Star Irradiance (W/m^2)")
+    irr_label = ttk.Label(temp_tab, text="Star Luminosity (W)")
     irr_label.grid(row=8, column=0)
     irr_entry = ttk.Entry(temp_tab)
     irr_entry.grid(row=8, column=1)
@@ -431,13 +435,13 @@ def temp_sim():
     earth_comp.grid(row=10, column=0, columnspan=2)
 
     # Circle widget
-    canvas4 = tk.Canvas(temp_tab, width=250, height=250)
+    canvas4 = tk.Canvas(temp_frame, width=250, height=250)
     circle = canvas4.create_oval(0, 0, 250, 250, outline="")
-    canvas4.grid(row=13, column=0, columnspan=1, sticky="se")
+    canvas4.grid(row=1, column=2, columnspan=1)
 
     # Bar graph canvas
-    bar_canvas = tk.Canvas(temp_tab, width=250, height=250)
-    bar_canvas.grid(row=13, column=1, columnspan=1)
+    bar_canvas = tk.Canvas(temp_frame, width=250, height=250)
+    bar_canvas.grid(row=0, column=2, columnspan=1)
 
 
 
@@ -504,15 +508,20 @@ def display_help_window():
     7. Methane Concentration (ppm):
        - Enter the concentration of methane (CH4) in the exoplanet's atmosphere in parts per million (ppm).
 
-    8. Star Irradiance (Watts):
-       - Enter the irradiance of the host star in Watts.
+    8. Star Luminosity (Watts):
+       - Enter the luminosity of the host star in Watts.
 
     9. Calculate:
        - Click 'Calculate' to estimate the surface temperature of the exoplanet.
 
     10. Transfer Data:
        - Click 'Transfer Data' to automatically fill the parameters with the estimated values from the light curve analysis, 
-       and fill the remaining atmospheric parameters with Earth's."""
+       and fill the remaining atmospheric parameters with Earth's.
+    
+    11. Results: 
+	   - Equilibrium Temperature is the black body temperature of a planet a distance D from the host star; it depends only on 
+	   the flux of the star and the planet's distance. 
+	   - The esimated surface temperature takes into account your atmospheric parameters inputs. """
 
         msgbox.showinfo(title="Temperature Simulator Help", message=temp_sim_help_text)
 
@@ -562,7 +571,7 @@ def settings():
 
 
 # -----------------------------------------------------------------------------------------------
-# Threading:
+# Threading: (not doing anything atm, i removed it; not sure if it helps)
 # -----------------------------------------------------------------------------------------------
 
 def displayTabContents():
@@ -576,7 +585,7 @@ def displayTabContents():
 
 
 # -----------------------------------------------------------------------------------------------
-# GUI Section: buttons, labels and text boxes
+# GUI Section: buttons, labels and text boxes. Very messy
 # -----------------------------------------------------------------------------------------------
 
 left_frame = tk.Frame(lc_tab)
