@@ -11,6 +11,5 @@ Features to be added:
 
 ![One](Dark.png)
 ![Two](Light.png)
-![Three](TempD.png)
-![Four](TempL.png)
+![Three](temp.png)
 ![Five](Help.png)
