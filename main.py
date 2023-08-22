@@ -40,6 +40,7 @@ CH4Concentration = 1.8e-6	# Concentration of CH4 in Earth's atmosphere (1.8 ppm)
 
 root = tk.Tk()
 root.title("Lightcurve Analysis")
+root.resizable(False, False)
 
 # This allows for the different tabs at the top
 notebook = ttk.Notebook(root)
@@ -125,10 +126,14 @@ def analyse_all():
     phase_folded = lc.fold(period=period, epoch_time=transit)["flux"].value
     moving_avg = rolling_avg(phase_folded)
 
-    fig = Figure(figsize=(5, 4), dpi=100)
-    fig2 = Figure(figsize=(5, 4), dpi=100)
+    fig = Figure(figsize=(4.7, 3.32), dpi=100, facecolor="None")
+    fig2 = Figure(figsize=(4.7, 3.25), dpi=100, facecolor="None")
     ax = fig.add_subplot(111)
     ax2 = fig2.add_subplot(111)
+    ax.tick_params(axis="x", labelsize=6)
+    ax.tick_params(axis="y", labelsize=6)
+    ax2.tick_params(axis="x", labelsize=6)
+    ax2.tick_params(axis="y", labelsize=6)
 
     # Plot all 3 figures
     lc.plot(ax=ax)
@@ -145,7 +150,7 @@ def analyse_all():
     canvas2 = FigureCanvasTkAgg(fig2, master=right_frame)
     canvas2.get_tk_widget().delete("all")
     canvas2.draw()
-    canvas2.get_tk_widget().grid(row=3, column=2)
+    canvas2.get_tk_widget().grid(row=2, column=2)
     phase_title.configure(text="Phase Folding")
 
     if saver.get() == 1:
@@ -295,7 +300,7 @@ def temp_sim():
         ones = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         ex_values = [x/e for x,e in zip(exoplanet_values, earth_values)]
 
-        fig, ax3 = plt.subplots(figsize=(3, 4))
+        fig, ax3 = plt.subplots(figsize=(3, 3))
         bar_width = 0.3  # Adjust the bar width
 
         # Set the positions of the bars
@@ -316,12 +321,12 @@ def temp_sim():
         # Create a FigureCanvasTkAgg instance and display it in the bar_canvas
         canvas3 = FigureCanvasTkAgg(fig, master=bar_canvas)
         canvas3.draw()
-        canvas3.get_tk_widget().grid(row=0, column=2)
+        canvas3.get_tk_widget().grid(row=0, column=3)
 
         # Add a toolbar
         toolbar = NavigationToolbar2Tk(canvas3, bar_canvas)
         toolbar.update()
-        canvas3.get_tk_widget().grid(row=0, column=2)
+        canvas3.get_tk_widget().grid(row=0, column=3)
 
     def compare_to_earth():
 
@@ -361,7 +366,7 @@ def temp_sim():
 
     # HEADER
     temp_frame = ttk.Frame(tempsim_tab)
-    temp_frame.grid(row=0, column=3)
+    temp_frame.grid(row=0, column=3, padx=20)
     temp_tab = ttk.Frame(tempsim_tab)
     temp_tab.grid(row=0, column=0, sticky="n")
     sim_header = ttk.Label(temp_tab, text="The 'help' tab contains Earth's values for reference.")
@@ -437,12 +442,11 @@ def temp_sim():
     # Circle widget
     canvas4 = tk.Canvas(temp_frame, width=250, height=250)
     circle = canvas4.create_oval(0, 0, 250, 250, outline="")
-    canvas4.grid(row=1, column=2, columnspan=1)
+    canvas4.grid(row=1, column=3, columnspan=1)
 
     # Bar graph canvas
-    bar_canvas = tk.Canvas(temp_frame, width=250, height=250)
-    bar_canvas.grid(row=0, column=2, columnspan=1)
-
+    bar_canvas = tk.Canvas(temp_frame, width=150, height=150)
+    bar_canvas.grid(row=0, column=3, columnspan=1)
 
 
 # -----------------------------------------------------------------------------------------------
@@ -489,27 +493,35 @@ def display_help_window():
 
     1. Distance (AU):
        - Enter the semi-major axis distance of the exoplanet from its host star in Astronomical Units (AU).
+       - Earth: 1 AU
 
     2. Radius (Earth radii):
        - Enter the radius of the exoplanet in Earth radii.
+       - Earth: 1 R
 
     3. Pressure (kPa):
        - Enter the atmospheric pressure of the exoplanet in kilopascals (kPa).
+       - Earth: 100 kPa
 
-    4. Density (kg/m^-3):
+    4. Density (kg/m^3):
        - Enter the atmospheric density of the exoplanet in kilograms per cubic meter (kg/m^-3).
+       - Earth: 1.2 kg/m^3
 
     5. Specific Heat (J/Kg*K):
        - Enter the specific heat of the exoplanet's atmosphere in Joules per kilogram per Kelvin (J/Kg*K).
+       - Earth: 700 J/KgK
 
     6. CO2 Concentration (ppm):
        - Enter the concentration of carbon dioxide (CO2) in the exoplanet's atmosphere in parts per million (ppm).
+       - Earth: 400 ppm
 
     7. Methane Concentration (ppm):
        - Enter the concentration of methane (CH4) in the exoplanet's atmosphere in parts per million (ppm).
+       - Earth: 1.8 ppm
 
     8. Star Luminosity (Watts):
        - Enter the luminosity of the host star in Watts.
+       - Sun: 3.8e26
 
     9. Calculate:
        - Click 'Calculate' to estimate the surface temperature of the exoplanet.
@@ -625,14 +637,14 @@ lc_button.grid(row=8, column=0, pady=5)
 right_frame = tk.Frame(lc_tab)
 right_frame.grid(row=0, column=2, rowspan=10, padx=50)
 
-canvas = tk.Canvas(right_frame, bd=0, highlightthickness=0, width=250, height=250)
+canvas = tk.Canvas(right_frame, bd=0, highlightthickness=0)
 canvas.grid(row=1, column=2, rowspan=4, padx=10, pady=10)  
-canvas2 = tk.Canvas(right_frame, bd=0, highlightthickness=0, width=250, height=250)
-canvas2.grid(row=3, column=2, rowspan=4, padx=10, pady=10)
+canvas2 = tk.Canvas(right_frame, bd=0, highlightthickness=0)
+canvas2.grid(row=2, column=2, rowspan=4, padx=10, pady=10)
 lc_title = ttk.Label(right_frame, text="")
 lc_title.grid(row=0, column=2, sticky="n")
 phase_title = ttk.Label(right_frame, text="")
-phase_title.grid(row=2, column=2, sticky="n")
+#phase_title.grid(row=2, column=2, sticky="n")
 
 #Additional
 central_frame = ttk.Frame(lc_tab)
@@ -706,6 +718,6 @@ displayTabContents()
 
 sv_ttk.set_theme("dark")
 
-lc_tab.bind("<Configure>", on_resize)
+#lc_tab.bind("<Configure>", on_resize)
 
 root.mainloop()
