@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lightcurve Analysis Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px 10px 0 0;
+            backdrop-filter: blur(10px);
+            margin-bottom: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .tab:first-child {
+            border-radius: 10px 0 0 0;
+        }
+
+        .tab:last-child {
+            border-radius: 0 10px 0 0;
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border-radius: 0 0 15px 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(15px);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .analysis-container {
+            display: grid;
+            grid-template-columns: 300px 300px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .control-panel {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+        }
+
+        .results-panel {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            color: #212529;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-wrapper {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 1.1rem;
+            border: 2px dashed #dee2e6;
+        }
+
+        .temperature-sim {
+            display: grid;
+            grid-template-columns: 1fr 300px 300px;
+            gap: 30px;
+        }
+
+        .planet-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(145deg, #1a1a1a, #2d3436);
+            border-radius: 15px;
+            padding: 30px;
+            color: white;
+        }
+
+        .planet-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4a90e2, #2c5aa0);
+            margin: 20px 0;
+            box-shadow: 0 0 30px rgba(74, 144, 226, 0.5);
+            transition: all 0.5s ease;
+        }
+
+        .comparison-chart {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            height: fit-content;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .help-content {
+            line-height: 1.6;
+        }
+
+        .help-section {
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .help-section h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .help-section p, .help-section ul {
+            margin-bottom: 10px;
+        }
+
+        .help-section ul {
+            padding-left: 20px;
+        }
+
+        .link {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .analyzing {
+            animation: pulse 1.5s infinite;
+        }
+
+        @media (max-width: 1200px) {
+            .analysis-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .temperature-sim {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌟 TESS/Kepler Lightcurve Analysis Tool</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('analysis')">Light Curve Analysis</button>
+            <button class="tab" onclick="switchTab('temperature')">Temperature Simulation</button>
+            <button class="tab" onclick="switchTab('help')">Help</button>
+        </div>
+
+        <!-- Light Curve Analysis Tab -->
+        <div id="analysis" class="tab-content active">
+            <div class="analysis-container">
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <h3>Controls</h3>
+                    
+                    <div class="input-group">
+                        <label for="fileInput">Load FITS File:</label>
+                        <input type="file" id="fileInput" accept=".fits,.fit">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="isLCFile">
+                        <label for="isLCFile">LC File (uncheck for TPF)</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="autoSave">
+                        <label for="autoSave">Auto Save Figures</label>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="stellarMass">Stellar Mass (Solar Masses):</label>
+                        <input type="number" id="stellarMass" placeholder="1.0" step="0.1">
+                    </div>
+
+                    <button class="btn" onclick="analyzeFile()" id="analyzeBtn">
+                        Analyze Light Curve
+                    </button>
+
+                    <div class="status-message" id="statusMessage"></div>
+
+                    <div class="input-group">
+                        <label for="productId">Product Group ID (Download):</label>
+                        <input type="text" id="productId" placeholder="Enter Product Group ID">
+                    </div>
+
+                    <button class="btn secondary" onclick="downloadData()">
+                        Download MAST Data
+                    </button>
+                </div>
+
+                <!-- Results Panel -->
+                <div class="results-panel">
+                    <h3>Analysis Results</h3>
+                    
+                    <div class="result-item">
+                        <div class="result-label">Object Name:</div>
+                        <div class="result-value" id="objectName">No file loaded</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Estimated Period:</div>
+                        <div class="result-value" id="periodResult">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Planet Radius:</div>
+                        <div class="result-value" id="radiusResult">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Semi-major Axis:</div>
+                        <div class="result-value" id="distanceResult">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Flux:</div>
+                        <div class="result-value" id="fluxResult">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Stellar Temperature:</div>
+                        <div class="result-value" id="stellarTemp">-</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Stellar Radius:</div>
+                        <div class="result-value" id="stellarRadius">-</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <div class="chart-title">Light Curve</div>
+                        <canvas id="lightCurveChart" class="chart-placeholder">
+                            Load a FITS file to display light curve
+                        </canvas>
+                    </div>
+
+                    <div class="chart-wrapper">
+                        <div class="chart-title">Phase Folded</div>
+                        <canvas id="phaseFoldedChart" class="chart-placeholder">
+                            Analyze data to display phase folded curve
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temperature Simulation Tab -->
+        <div id="temperature" class="tab-content">
+            <div class="temperature-sim">
+                <!-- Input Parameters -->
+                <div class="control-panel">
+                    <h3>Planet Parameters</h3>
+                    <p style="margin-bottom: 20px; font-size: 0.9rem; color: #6c757d;">
+                        Enter planetary parameters to estimate surface temperature. Earth values are shown in the Help tab.
+                    </p>
+
+                    <div class="input-group">
+                        <label for="distance">Distance (AU):</label>
+                        <input type="number" id="distance" placeholder="1.0" step="0.01">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="radius">Radius (Earth radii):</label>
+                        <input type="number" id="radius" placeholder="1.0" step="0.01">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="pressure">Pressure (kPa):</label>
+                        <input type="number" id="pressure" placeholder="100" step="1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="density">Density (kg/m³):</label>
+                        <input type="number" id="density" placeholder="1.2" step="0.1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="specificHeat">Specific Heat (J/kg·K):</label>
+                        <input type="number" id="specificHeat" placeholder="700" step="10">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="co2">CO₂ Concentration (ppm):</label>
+                        <input type="number" id="co2" placeholder="400" step="1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="ch4">CH₄ Concentration (ppm):</label>
+                        <input type="number" id="ch4" placeholder="1.8" step="0.1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="luminosity">Star Luminosity (W):</label>
+                        <input type="number" id="luminosity" placeholder="3.8e26" step="1e24">
+                    </div>
+
+                    <button class="btn success" onclick="calculateTemperature()">
+                        Calculate Temperature
+                    </button>
+
+                    <button class="btn" onclick="transferData()">
+                        Transfer Data from Analysis
+                    </button>
+                </div>
+
+                <!-- Planet Visualization -->
+                <div class="planet-visualization">
+                    <h3>Planet Visualization</h3>
+                    <div class="planet-circle" id="planetCircle"></div>
+                    <div id="tempResults">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <strong>Equilibrium Temperature:</strong>
+                            <div id="eqTemp">- K</div>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <strong>Surface Temperature:</strong>
+                            <div id="surfaceTemp">- K</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <strong>Earth Similarity Index:</strong>
+                            <div id="esiValue">- </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Chart -->
+                <div class="comparison-chart">
+                    <h3>Parameter Comparison</h3>
+                    <canvas id="comparisonChart" width="280" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Tab -->
+        <div id="help" class="tab-content">
+            <div class="help-content">
+                <div class="help-section">
+                    <h3>🔍 Finding and Downloading TESS Light Curves</h3>
+                    <ol>
+                        <li>Visit the <a href="https://mast.stsci.edu/portal/Mashup/Clients/Mast/Portal.html" target="_blank" class="link">MAST Archive</a></li>
+                        <li>Select collection 'Mast Catalogs' → mission 'TESS Ctl v8.01'</li>
+                        <li>Use Advanced Search to restrict to nearby stars (&lt;30pc)</li>
+                        <li>Search for TIC IDs in 'MAST Observations by Object Name'</li>
+                        <li>Look for observations with lightcurve symbols</li>
+                        <li>Copy the Product Group ID from observation details</li>
+                        <li>Use the download feature in this tool</li>
+                    </ol>
+                </div>
+
+                <div class="help-section">
+                    <h3>📊 Light Curve Analysis</h3>
+                    <ul>
+                        <li><strong>Load File:</strong> Select TESS/KEPLER FITS files</li>
+                        <li><strong>File Types:</strong> Check 'LC File' for light curves, uncheck for TPF pixel files</li>
+                        <li><strong>Stellar Mass:</strong> Enter in solar masses (default: 1.0 if blank)</li>
+                        <li><strong>Analysis:</strong> Estimates orbital period and planet properties</li>
+                        <li><strong>Auto Save:</strong> Saves charts as PNG files automatically</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>🌡️ Temperature Simulation</h3>
+                    <p><strong>Earth Reference Values:</strong></p>
+                    <ul>
+                        <li>Distance: 1.0 AU</li>
+                        <li>Radius: 1.0 Earth radii</li>
+                        <li>Pressure: 100 kPa</li>
+                        <li>Density: 1.2 kg/m³</li>
+                        <li>Specific Heat: 700 J/kg·K</li>
+                        <li>CO₂: 400 ppm</li>
+                        <li>CH₄: 1.8 ppm</li>
+                        <li>Solar Luminosity: 3.8×10²⁶ W</li>
+                    </ul>
+                    <p>The simulation calculates both equilibrium temperature (blackbody) and estimated surface temperature (with atmospheric effects).</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>📚 Credits & References</h3>
+                    <p><strong>Original Tool:</strong> Marco Leonardi (2023), University of Bologna</p>
+                    <p><strong>Libraries:</strong> Built on the Lightkurve library by the NASA Kepler/K2 Guest Observer Office and STScI</p>
+                    <p><strong>Web Version:</strong> Converted for browser compatibility</p>
+                    <p><strong>Links:</strong></p>
+                    <ul>
+                        <li><a href="https://docs.lightkurve.org/" target="_blank" class="link">Lightkurve Documentation</a></li>
+                        <li><a href="https://mast.stsci.edu/" target="_blank" class="link">MAST Archive</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store analysis results
+        let analysisData = {
+            objectName: null,
+            period: null,
+            radius: null,
+            distance: null,
+            stellarTemp: null,
+            stellarRadius: null,
+            flux: null
+        };
+
+        // Constants
+        const AU = 149.6e6; // km
+        const SOLAR_CONSTANT = 1361.0; // W/m²
+        const SIGMA = 5.67e-8; // Stefan-Boltzmann constant
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to selected tab
+            event.target.classList.add('active');
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // File analysis simulation (simplified)
+        function analyzeFile() {
+            const fileInput = document.getElementById('fileInput');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            if (!fileInput.files.length) {
+                showStatus('Please select a FITS file first', 'error');
+                return;
+            }
+
+            // Simulate analysis
+            analyzeBtn.classList.add('analyzing');
+            analyzeBtn.textContent = 'Analyzing...';
+            showStatus('Analyzing light curve data...', 'info');
+
+            // Simulate processing time
+            setTimeout(() => {
+                // Generate mock results for demonstration
+                const mockResults = generateMockResults();
+                updateAnalysisResults(mockResults);
+                
+                analyzeBtn.classList.remove('analyzing');
+                analyzeBtn.textContent = 'Analyze Light Curve';
+                showStatus('Analysis complete!', 'success');
+                
+                // Generate mock charts
+                generateMockCharts();
+            }, 3000);
+        }
+
+        function generateMockResults() {
+            const fileName = document.getElementById('fileInput').files[0]?.name || 'Unknown';
+            
+            return {
+                objectName: `TIC ${Math.floor(Math.random() * 1000000)}`,
+                period: (Math.random() * 10 + 1).toFixed(2) + ' days',
+                radius: (Math.random() * 2 + 0.5).toFixed(3) + ' Earth radii',
+                distance: (Math.random() * 2 + 0.5).toFixed(3) + ' AU',
+                stellarTemp: (Math.random() * 2000 + 4000).toFixed(0) + ' K',
+                stellarRadius: (Math.random() * 0.5 + 0.8).toFixed(2) + ' Solar radii',
+                flux: (Math.random() * 1000 + 500).toFixed(2) + ' e-/s'
+            };
+        }
+
+        function updateAnalysisResults(results) {
+            Object.keys(results).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.textContent = results[key];
+                }
+            });
+            
+            // Store for temperature simulation
+            analysisData = results;
+        }
+
+        function generateMockCharts() {
+            // Generate mock light curve
+            const lcCanvas = document.getElementById('lightCurveChart');
+            const ctx1 = lcCanvas.getContext('2d');
+            
+            lcCanvas.width = 470;
+            lcCanvas.height = 250;
+            
+            ctx1.fillStyle = '#f8f9fa';
+            ctx1.fillRect(0, 0, lcCanvas.width, lcCanvas.height);
+            
+            // Draw axes
+            ctx1.strokeStyle = '#333';
+            ctx1.lineWidth = 2;
+            ctx1.beginPath();
+            ctx1.moveTo(50, 200);
+            ctx1.lineTo(420, 200);
+            ctx1.moveTo(50, 200);
+            ctx1.lineTo(50, 50);
+            ctx1.stroke();
+            
+            // Draw mock light curve with transit
+            ctx1.strokeStyle = '#007bff';
+            ctx1.lineWidth = 1;
+            ctx1.beginPath();
+            
+            for (let x = 50; x < 420; x += 2) {
+                let y = 125 + Math.sin((x - 50) * 0.02) * 10 + Math.random() * 5;
+                
+                // Add transit dip
+                if (x > 200 && x < 250) {
+                    y += 30;
+                }
+                
+                if (x === 50) {
+                    ctx1.moveTo(x, y);
+                } else {
+                    ctx1.lineTo(x, y);
+                }
+            }
+            ctx1.stroke();
+            
+            // Labels
+            ctx1.fillStyle = '#333';
+            ctx1.font = '12px Arial';
+            ctx1.fillText('Time', 200, 230);
+            ctx1.save();
+            ctx1.translate(20, 125);
+            ctx1.rotate(-Math.PI/2);
+            ctx1.fillText('Flux', 0, 0);
+            ctx1.restore();
+
+            // Generate phase folded chart
+            const pfCanvas = document.getElementById('phaseFoldedChart');
+            const ctx2 = pfCanvas.getContext('2d');
+            
+            pfCanvas.width = 470;
+            pfCanvas.height = 250;
+            
+            ctx2.fillStyle = '#f8f9fa';
+            ctx2.fillRect(0, 0, pfCanvas.width, pfCanvas.height);
+            
+            // Draw axes
+            ctx2.strokeStyle = '#333';
+            ctx2.lineWidth = 2;
+            ctx2.beginPath();
+            ctx2.moveTo(50, 200);
+            ctx2.lineTo(420, 200);
+            ctx2.moveTo(50, 200);
+            ctx2.lineTo(50, 50);
+            ctx2.stroke();
+            
+            // Draw phase folded curve
+            ctx2.fillStyle = '#007bff';
+            for (let x = 50; x < 420; x += 3) {
+                let phase = ((x - 50) / 370) * 2 - 1; // -1 to 1
+                let y = 125;
+                
+                // Transit shape
+                if (Math.abs(phase) < 0.1) {
+                    y += 40 * (1 - Math.abs(phase) / 0.1);
+                }
+                
+                y += Math.random() * 4 - 2; // noise
+                
+                ctx2.beginPath();
+                ctx2.arc(x, y, 1, 0, 2 * Math.PI);
+                ctx2.fill();
+            }
+            
+            // Labels
+            ctx2.fillStyle = '#333';
+            ctx2.font = '12px Arial';
+            ctx2.fillText('Phase', 200, 230);
+            ctx2.save();
+            ctx2.translate(20, 125);
+            ctx2.rotate(-Math.PI/2);
+            ctx2.fillText('Flux', 0, 0);
+            ctx2.restore();
+        }
+
+        // Temperature calculation
+        function calculateTemperature() {
+            const distance = parseFloat(document.getElementById('distance').value) || 1.0;
+            const radius = parseFloat(document.getElementById('radius').value) || 1.0;
+            const pressure = parseFloat(document.getElementById('pressure').value) || 100.0;
+            const density = parseFloat(document.getElementById('density').value) || 1.2;
+            const specificHeat = parseFloat(document.getElementById('specificHeat').value) || 700.0;
+            const co2 = parseFloat(document.getElementById('co2').value) || 400.0;
+            const ch4 = parseFloat(document.getElementById('ch4').value) || 1.8;
+            const luminosity = parseFloat(document.getElementById('luminosity').value) || 3.8e26;
+
+            // Calculate flux at planet distance
+            const distanceM = distance * 1.49e11; // Convert AU to meters
+            const flux = luminosity / (4 * Math.PI * distanceM * distanceM);
+
+            // CO2 and CH4 greenhouse parameters
+            const co2Parameter = (co2 / 1000000) * 5.35;
+            const ch4Parameter = (ch4 / 1000000) * 0.036
