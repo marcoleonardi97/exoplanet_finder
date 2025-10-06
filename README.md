@@ -1,4 +1,5 @@
 # Streamlit Web App for Light Curve Analysis of TESS // KEPLER Observations
+<img width="1395" height="703" alt="Screenshot 2025-10-06 at 23 08 48" src="https://github.com/user-attachments/assets/b8e3b27b-c796-4bd3-8dae-2cf82218c284" />
 
 # Exoplanet Light Curve Analysis Tool
 
